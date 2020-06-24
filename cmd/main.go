@@ -1,14 +1,20 @@
 package main
 
-import "sqlbundle"
+import (
+	"sqlbundle"
+)
 
 func main() {
-	sb, err := sqlbundle.NewSQLBundle("/home/deadpool/workspace/goproj/sqlbundle/example")
+	cmd, err := sqlbundle.ReadArgument()
 	if err != nil {
 		panic(err)
 	}
-	err = sb.Create("1_example.sql")
-	if err != nil{
+	sb, err := sqlbundle.NewSQLBundle(cmd.Argument)
+	if err != nil {
+		panic(err)
+	}
+	err = sqlbundle.Handle(cmd.Command, sb)
+	if err != nil {
 		panic(err)
 	}
 }
