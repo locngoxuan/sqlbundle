@@ -12,21 +12,23 @@ import (
 )
 
 type MigrationScript struct {
+	AppVersion string
 	Group      string
 	Artifact   string
 	Version    string
 	FilePath   string
 	FileName   string
 	NextScript *MigrationScript
-	IsApplied  bool
+	Ignore     bool
 }
 
 type MigrationSQL struct {
-	Group    string
-	Artifact string
-	Version  string
-	FilePath string
-	FileName string
+	AppVersion string
+	Group      string
+	Artifact   string
+	Version    string
+	FilePath   string
+	FileName   string
 }
 
 func (ms *MigrationScript) ListAll() {
@@ -37,31 +39,32 @@ func (ms *MigrationScript) ListAll() {
 	}
 }
 
-func (ms *MigrationScript) notAppliedYet() []MigrationSQL {
+func (ms *MigrationScript) notIgnored() []MigrationSQL {
 	s := ms
 	paths := make([]MigrationSQL, 0)
 	for s != nil {
-		if s.IsApplied || isEmpty(s.FilePath) {
+		if s.Ignore || isEmpty(s.FilePath) {
 			s = s.NextScript
 			continue
 		}
 		paths = append(paths, MigrationSQL{
-			Group:    s.Group,
-			Artifact: s.Artifact,
-			Version:  s.Version,
-			FilePath: s.FilePath,
-			FileName: s.FileName,
+			AppVersion: s.AppVersion,
+			Group:      s.Group,
+			Artifact:   s.Artifact,
+			Version:    s.Version,
+			FilePath:   s.FilePath,
+			FileName:   s.FileName,
 		})
 		s = s.NextScript
 	}
 	return paths
 }
 
-func (ms *MigrationScript) markAsApplied(depName, fileName string) {
+func (ms *MigrationScript) ignore(depName, fileName string) {
 	s := ms
-	for s != nil{
+	for s != nil {
 		if fmt.Sprintf("%s.%s", s.Group, s.Artifact) == depName && s.FileName == fileName {
-			s.IsApplied = true
+			s.Ignore = true
 			break
 		}
 		s = s.NextScript
@@ -70,7 +73,7 @@ func (ms *MigrationScript) markAsApplied(depName, fileName string) {
 
 func (ms *MigrationScript) append(script *MigrationScript) {
 	s := ms
-	script.IsApplied = false
+	script.Ignore = false
 	for {
 		next := s.NextScript
 		if next == nil {
@@ -89,12 +92,13 @@ func collectSql(script *MigrationScript, dir, group, artifact, version string) (
 		}
 		_, fileName := filepath.Split(path)
 		next := &MigrationScript{
-			Version:   version,
-			Group:     group,
-			Artifact:  artifact,
-			FilePath:  path,
-			FileName:  fileName,
-			IsApplied: false,
+			AppVersion: script.AppVersion,
+			Version:    version,
+			Group:      group,
+			Artifact:   artifact,
+			FilePath:   path,
+			FileName:   fileName,
+			Ignore:     false,
 		}
 		script.append(next)
 		return nil

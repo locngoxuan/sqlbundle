@@ -27,6 +27,8 @@ type SQLDialect interface {
 	createTable() string
 	insertVersion() string
 	insertHistory() string
+	deleteHistory() string
+	deleteVersion() string
 }
 
 var dialect SQLDialect = &PostgresDialect{}
@@ -78,6 +80,14 @@ func (pg PostgresDialect) insertVersion() string {
 
 func (pg PostgresDialect) insertHistory() string {
 	return fmt.Sprintf("INSERT INTO db_histories (version, dep_name, dep_version, file_name) VALUES ($1, $2, $3, $4)")
+}
+
+func (pg PostgresDialect) deleteVersion() string {
+	return fmt.Sprintf("DELETE FROM db_versions WHERE version = $1")
+}
+
+func (pg PostgresDialect) deleteHistory() string {
+	return fmt.Sprintf("DELETE FROM db_histories WHERE dep_name = $1 AND dep_version = $2 AND file_name = $3")
 }
 
 func GetDialect() SQLDialect {

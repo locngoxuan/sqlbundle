@@ -74,6 +74,11 @@ func Handle(command string, bundle SQLBundle) error {
 			return errors.New("missing database driver/connection string configuration")
 		}
 		return bundle.Downgrade()
+	case "help":
+		f.Usage()
+		return nil
+	default:
+		printInfo(fmt.Sprintf("command `%s` not found. Try `sqlbundle help` for more detail!", command))
 	}
 	return nil
 }

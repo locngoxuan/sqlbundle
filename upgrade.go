@@ -21,9 +21,10 @@ func (sb *SQLBundle) Upgrade() error {
 	}
 
 	script := &MigrationScript{
-		Version:  sb.ReadVersion(),
-		Group:    sb.Config.GroupId,
-		Artifact: sb.Config.ArtifactId,
+		AppVersion: sb.ReadVersion(),
+		Version:    sb.ReadVersion(),
+		Group:      sb.Config.GroupId,
+		Artifact:   sb.Config.ArtifactId,
 	}
 
 	err = collectMigrations(*sb, script)
@@ -50,18 +51,18 @@ func (sb *SQLBundle) Upgrade() error {
 	}
 
 	for _, h := range histories {
-		script.markAsApplied(h.DepName, h.File)
+		script.ignore(h.DepName, h.File)
 	}
 
 	tx, err := db.Begin()
 	if err != nil {
 		return err
 	}
-	sqlFiles := script.notAppliedYet()
+	sqlFiles := script.notIgnored()
 
 	d := GetDialect()
 	historyStatement, err := tx.Prepare(d.insertHistory())
-	if err != nil{
+	if err != nil {
 		return err
 	}
 
@@ -88,7 +89,7 @@ func (sb *SQLBundle) Upgrade() error {
 	}
 
 	versionStatement, err := tx.Prepare(d.insertVersion())
-	if err != nil{
+	if err != nil {
 		_ = tx.Rollback()
 		return err
 	}
