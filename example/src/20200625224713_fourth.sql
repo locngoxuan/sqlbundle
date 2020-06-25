@@ -1,5 +1,5 @@
 --+up BEGIN
-CREATE TABLE IF NOT EXISTS second (
+CREATE TABLE IF NOT EXISTS fourth (
   ID serial NOT NULL,
   NAME varchar(100),
   PRIMARY KEY(ID)
@@ -7,5 +7,5 @@ CREATE TABLE IF NOT EXISTS second (
 --+up END
 
 --+down BEGIN
-DROP TABLE IF EXISTS second;
+DROP TABLE IF EXISTS fourth;
 --+down END

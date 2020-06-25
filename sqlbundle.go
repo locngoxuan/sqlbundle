@@ -11,13 +11,13 @@ import (
 )
 
 var version = "1.0.0"
-var sqlTemplate = `-- up statement
+var sqlTemplate = `--+up BEGIN
 -- TODO: write sql statement here
--- end up
+--+up END
 
--- down statement
+--+down BEGIN
 -- TODO: write sql statement here
--- end down`
+--+down END`
 
 type SQLBundle struct {
 	Argument
@@ -30,7 +30,7 @@ type SQLBundle struct {
 }
 
 func NewSQLBundle(arg Argument) (bundle SQLBundle, err error) {
-	workDir := arg.Workdir
+	workDir := arg.WorkDir
 	if strings.TrimSpace(workDir) == "" {
 		workDir, err = filepath.Abs(".")
 	}
@@ -65,9 +65,15 @@ func Handle(command string, bundle SQLBundle) error {
 		printInfo(fmt.Sprintf("Version %s", version))
 		return nil
 	case "upgrade":
+		if isEmpty(bundle.Argument.DBDriver) || isEmpty(bundle.Argument.DBString) {
+			return errors.New("missing database driver/connection string configuration")
+		}
 		return bundle.Upgrade()
 	case "downgrade":
-		return nil
+		if isEmpty(bundle.Argument.DBDriver) || isEmpty(bundle.Argument.DBString) {
+			return errors.New("missing database driver/connection string configuration")
+		}
+		return bundle.Downgrade()
 	}
 	return nil
 }

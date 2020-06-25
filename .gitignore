@@ -73,3 +73,5 @@ _testmain.go
 target
 */target
 /gocd-plugins/.nb-gradle/
+
+build

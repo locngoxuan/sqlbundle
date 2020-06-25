@@ -16,12 +16,14 @@ type Argument struct {
 	Version    string
 	Group      string
 	Artifact   string
-	Workdir    string
+	WorkDir    string
 	Filename   string
 	Force      bool
 	Repository string
 	Username   string
 	Password   string
+	DBDriver   string
+	DBString   string
 }
 
 func ReadArgument() (cmd Command, err error) {
@@ -34,15 +36,17 @@ func ReadArgument() (cmd Command, err error) {
 	cmd.Argument = Argument{}
 	if len(os.Args) > 2 {
 		f := flag.NewFlagSet("sqlbundle", flag.ExitOnError)
-		f.StringVar(&cmd.Argument.Version, "version", "", "")
-		f.StringVar(&cmd.Argument.Group, "group", "", "")
-		f.StringVar(&cmd.Argument.Artifact, "artifact", "", "")
-		f.StringVar(&cmd.Argument.Workdir, "workdir", "", "")
-		f.StringVar(&cmd.Argument.Filename, "file", "", "")
-		f.BoolVar(&cmd.Argument.Force, "force", false, "")
-		f.StringVar(&cmd.Argument.Repository, "repo", "", "")
-		f.StringVar(&cmd.Argument.Username, "user", "", "")
-		f.StringVar(&cmd.Argument.Password, "pass", "", "")
+		f.StringVar(&cmd.Argument.Version, "version", "", "version of database")
+		f.StringVar(&cmd.Argument.Group, "group", "", "group name")
+		f.StringVar(&cmd.Argument.Artifact, "artifact", "", "artifact name")
+		f.StringVar(&cmd.Argument.WorkDir, "workdir", "", "working directory")
+		f.StringVar(&cmd.Argument.Filename, "file", "", "name of sql file")
+		f.BoolVar(&cmd.Argument.Force, "force", false, "force to delete before install")
+		f.StringVar(&cmd.Argument.Repository, "repo", "", "address of repository")
+		f.StringVar(&cmd.Argument.Username, "user", "", "repository credential")
+		f.StringVar(&cmd.Argument.Password, "pass", "", "repository credential")
+		f.StringVar(&cmd.Argument.DBDriver, "db-driver", "", "database driver")
+		f.StringVar(&cmd.Argument.DBString, "db-connection", "", "connection string of database")
 		err = f.Parse(os.Args[2:])
 	}
 	return

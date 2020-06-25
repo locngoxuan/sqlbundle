@@ -1,7 +1,11 @@
--- up statement
--- TODO: write sql statement here
--- end up
+--+up BEGIN
+CREATE TABLE IF NOT EXISTS third (
+  ID serial NOT NULL,
+  NAME varchar(100),
+  PRIMARY KEY(ID)
+);
+--+up END
 
--- down statement
--- TODO: write sql statement here
--- end down
+--+down BEGIN
+DROP TABLE IF EXISTS third;
+--+down END

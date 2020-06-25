@@ -1,62 +1,76 @@
 package sqlbundle
 
-import "database/sql"
+import (
+	"database/sql"
+)
 
-func GetDBVersion(r []int, db *sql.DB) (int64, error) {
-	version, err := EnsureDBVersion(r, db)
+func createVersionTable(db *sql.DB) error {
+	txn, err := db.Begin()
 	if err != nil {
-		if err == ErrNoNextVersion{
-			return 0, nil
-		}
-		return -1, err
+		return err
 	}
 
-	return version, nil
+	d := GetDialect()
+
+	if _, err = txn.Exec(d.createTable()); err != nil {
+		_ = txn.Rollback()
+		return err
+	}
+	if err = txn.Commit(); err != nil {
+		_ = txn.Rollback()
+		return err
+	}
+	return nil
 }
 
-func EnsureDBVersion(r []int, db *sql.DB) (int64, error) {
-	rows, err := GetDialect().dbVersionQuery(r, db)
+func QueryDatabaseVersions(db *sql.DB) ([]DbVersion, error) {
+	rows, err := GetDialect().dbVersionQuery(db)
 	if err != nil {
-		return 0, createVersionTable(db)
+		return []DbVersion{}, createVersionTable(db)
 	}
-	defer rows.Close()
+	defer func() {
+		_ = rows.Close()
+	}()
 
-	// The most recent record for each migration specifies
-	// whether it has been applied or rolled back.
-	// The first version we find that has been applied is the current version.
-	toSkip := make([]int64, 0)
+	versions := make([]DbVersion, 0)
 
 	for rows.Next() {
-		var row MigrationRecord
-		if err = rows.Scan(&row.VersionID, &row.IsApplied); err != nil {
-			return 0, errors.Wrap(err, "failed to scan row")
+		var row DbVersion
+		if err = rows.Scan(&row.Id, &row.Version); err != nil {
+			return nil, err
 		}
-
-		// have we already marked this version to be skipped?
-		skip := false
-		for _, v := range toSkip {
-			if v == row.VersionID {
-				skip = true
-				break
-			}
-		}
-
-		if skip {
-			continue
-		}
-
-		// if version has been applied we're done
-		if row.IsApplied {
-			return row.VersionID, nil
-		}
-
-		// latest version of migration has not been applied.
-		toSkip = append(toSkip, row.VersionID)
+		versions = append(versions, row)
 	}
 
 	if err := rows.Err(); err != nil {
-		return 0, errors.Wrap(err, "failed to get next row")
+		return nil, err
 	}
 
-	return 0, ErrNoNextVersion
+	return versions, nil
+}
+
+func QueryDatabaseHistories(db *sql.DB) ([]DbHistory, error) {
+	rows, err := GetDialect().dbHistoryQuery(db)
+	if err != nil {
+		return []DbHistory{}, createVersionTable(db)
+	}
+	defer func() {
+		_ = rows.Close()
+	}()
+
+	histories := make([]DbHistory, 0)
+
+	for rows.Next() {
+		var row DbHistory
+		if err = rows.Scan(&row.Id, &row.Version, &row.DepName, &row.DepVersion, &row.File); err != nil {
+			return nil, err
+		}
+		histories = append(histories, row)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return histories, nil
 }

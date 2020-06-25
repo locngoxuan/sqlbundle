@@ -16,6 +16,13 @@ import (
 )
 
 const TIME_FORMAT = "20060102150405"
+const (
+	PARSER_START      int = iota // 0
+	PARSER_UP_BEGIN              // 1
+	PARSER_UP_END                // 2
+	PARSER_DOWN_BEGIN            // 3
+	PARSER_DOWN_END              // 4
+)
 
 func makeTimeSequence() string {
 	t := time.Now()
