@@ -1,6 +1,8 @@
 {
-  "group": "com.fortna.athena",
+  "group": "com.fortna.athena.project",
   "artifact": "database",
   "version": "0.1.0",
-  "dependencies": []
+  "dependencies": [
+    "http://192.168.188.136:8081/artifactory/example-repo-local/com/fortna/athena/database/0.1.0/database-0.1.0.tar"
+  ]
 }

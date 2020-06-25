@@ -65,6 +65,7 @@ func Handle(command string, bundle SQLBundle) error {
 		printInfo(fmt.Sprintf("Version %s", version))
 		return nil
 	case "upgrade":
+		return bundle.Upgrade()
 	case "downgrade":
 		return nil
 	}
@@ -200,6 +201,11 @@ func (sb *SQLBundle) Install() error {
 		return err
 	}
 
+	if sb.Config.Dependencies == nil || len(sb.Config.Dependencies) == 0 {
+		_ = os.RemoveAll(sb.DepsDir)
+		return nil
+	}
+
 	for _, dep := range sb.Config.Dependencies {
 		tarPath, err := downloadDependency(sb.DepsDir, dep)
 		if err != nil {
@@ -329,12 +335,4 @@ func (sb *SQLBundle) Publish() error {
 
 	link := fmt.Sprintf("%s/%s/%s", sb.Repository, modulePath, tarName)
 	return uploadFile(link, tarFile, sb.Username, sb.Password)
-}
-
-func (sb *SQLBundle) Upgrade() error {
-	return nil
-}
-
-func (sb *SQLBundle) Downgrade() error {
-	return nil
 }

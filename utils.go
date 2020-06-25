@@ -34,9 +34,9 @@ func isNillOrEmpty(s *string) bool {
 }
 
 func downloadDependency(depDir, link string) (string, error) {
-	fileName := path.Base(link)
 	printInfo("download dependency", link)
 	// Create the file
+	fileName := path.Base(link)
 	dest := filepath.Join(depDir, fileName)
 	out, err := os.Create(dest)
 	if err != nil {
@@ -173,11 +173,11 @@ func untarFile(tarPath, dest string) error {
 			if err != nil {
 				return err
 			}
-			finfo := hdr.FileInfo()
+			fileInfo := hdr.FileInfo()
 			fileName := hdr.Name
 			absFileName := filepath.Join(dest, fileName)
 			// if a dir, create it, then go to next segment
-			if finfo.Mode().IsDir() {
+			if fileInfo.Mode().IsDir() {
 				if err := os.MkdirAll(absFileName, 0755); err != nil {
 					return err
 				}
@@ -187,12 +187,12 @@ func untarFile(tarPath, dest string) error {
 			file, err := os.OpenFile(
 				absFileName,
 				os.O_RDWR|os.O_CREATE|os.O_TRUNC,
-				finfo.Mode().Perm(),
+				fileInfo.Mode().Perm(),
 			)
 			if err != nil {
 				return err
 			}
-			printInfo(fmt.Sprintf("x %s\n", absFileName))
+			printInfo(fmt.Sprintf("extract %s", absFileName))
 			n, cpErr := io.Copy(file, tr)
 			if closeErr := file.Close(); closeErr != nil {
 				return err
@@ -200,8 +200,8 @@ func untarFile(tarPath, dest string) error {
 			if cpErr != nil {
 				return cpErr
 			}
-			if n != finfo.Size() {
-				return fmt.Errorf("wrote %d, want %d", n, finfo.Size())
+			if n != fileInfo.Size() {
+				return fmt.Errorf("wrote %d, want %d", n, fileInfo.Size())
 			}
 		}
 		return nil
