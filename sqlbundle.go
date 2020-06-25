@@ -58,6 +58,8 @@ func Handle(command string, bundle SQLBundle) error {
 		return bundle.Install()
 	case "pack":
 		return bundle.Pack()
+	case "publish":
+		return bundle.Publish()
 	case "upgrade":
 	case "downgrade":
 		return nil
@@ -151,12 +153,12 @@ func (sb *SQLBundle) readConfig() error {
 
 func (sb *SQLBundle) Clean() error {
 	err := os.RemoveAll(sb.BuildDir)
-	if err != nil{
+	if err != nil {
 		return err
 	}
 
 	err = os.RemoveAll(sb.DepsDir)
-	if err != nil{
+	if err != nil {
 		return err
 	}
 	return nil
@@ -185,11 +187,12 @@ func (sb *SQLBundle) Install() error {
 		}
 		_, tarFile := filepath.Split(tarPath)
 		tarFile = strings.TrimSuffix(tarFile, filepath.Ext(tarFile))
-		err = untarFile(tarPath, sb.DepsDir)
+		dest := filepath.Join(sb.DepsDir, tarFile)
+		err = os.MkdirAll(dest, 0755)
 		if err != nil {
 			return err
 		}
-		err = os.Rename(filepath.Join(sb.DepsDir, "package"), filepath.Join(sb.DepsDir, tarFile))
+		err = untarFile(tarPath, dest)
 		if err != nil {
 			return err
 		}
@@ -197,6 +200,10 @@ func (sb *SQLBundle) Install() error {
 		if err != nil {
 			return err
 		}
+	}
+
+	if ok, _ := isDirEmpty(sb.DepsDir); ok {
+		_ = os.RemoveAll(sb.DepsDir)
 	}
 	return nil
 }
@@ -248,7 +255,42 @@ func (sb *SQLBundle) Pack() error {
 	if err != nil {
 		return err
 	}
-	return nil
+
+	if ok, _ := isDirEmpty(filepath.Join(packDirPath, "deps")); ok {
+		_ = os.RemoveAll(filepath.Join(packDirPath, "deps"))
+	}
+
+	if err != nil {
+		return err
+	}
+
+	dest := filepath.Join(sb.BuildDir, fmt.Sprintf("%s-%s.tar", sb.Config.ArtifactId, sb.Config.Version))
+	return tarFile(dest, []string{packDirPath})
+}
+
+func (sb *SQLBundle) Publish() error {
+	if isEmpty(sb.Repository) || isEmpty(sb.Username) || isEmpty(sb.Password) {
+		return errors.New("missing repository configuration")
+	}
+
+	err := sb.readConfig()
+	if err != nil {
+		return err
+	}
+
+	tarName := fmt.Sprintf("%s-%s.tar", sb.Config.ArtifactId, sb.Config.Version)
+	tarFile := filepath.Join(sb.BuildDir, tarName)
+	_, err = os.Stat(tarFile)
+	if err != nil {
+		return err
+	}
+	args := strings.Split(sb.Config.GroupId, ".")
+	args = append(args, sb.Config.ArtifactId)
+	args = append(args, sb.Config.Version)
+	modulePath := strings.Join(args, "/")
+
+	link := fmt.Sprintf("%s/%s/%s", sb.Repository, modulePath, tarName)
+	return uploadFile(link, tarFile, sb.Username, sb.Password)
 }
 
 func (sb *SQLBundle) Upgrade() error {

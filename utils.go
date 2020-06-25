@@ -2,6 +2,7 @@ package sqlbundle
 
 import (
 	"archive/tar"
+	"crypto/md5"
 	"errors"
 	"fmt"
 	"io"
@@ -10,6 +11,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -18,6 +20,17 @@ const TIME_FORMAT = "20060102150405"
 func makeTimeSequence() string {
 	t := time.Now()
 	return t.Format(TIME_FORMAT)
+}
+
+func isEmpty(s string) bool {
+	return strings.TrimSpace(s) == ""
+}
+
+func isNillOrEmpty(s *string) bool {
+	if s == nil {
+		return true
+	}
+	return isEmpty(*s)
 }
 
 func downloadDependency(depDir, link string) (string, error) {
@@ -56,6 +69,92 @@ func downloadDependency(depDir, link string) (string, error) {
 	return dest, nil
 }
 
+func tarFile(tarPath string, paths []string) error {
+	tarFile, err := os.Create(tarPath)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		err = tarFile.Close()
+	}()
+
+	absTar, err := filepath.Abs(tarPath)
+	if err != nil {
+		return err
+	}
+
+	tw := tar.NewWriter(tarFile)
+	defer func() {
+		_ = tw.Close()
+	}()
+
+	// walk each specified path and add encountered file to tar
+	for _, path := range paths {
+		// validate path
+		path = filepath.Clean(path)
+		absPath, err := filepath.Abs(path)
+		if err != nil {
+			return err
+		}
+		if absPath == absTar {
+			return errors.New(fmt.Sprintf("tar file %s cannot be the source", tarPath))
+		}
+		if absPath == filepath.Dir(absTar) {
+			return errors.New(fmt.Sprintf("tar file %s cannot be in source %s", tarPath, absPath))
+		}
+
+		walker := func(file string, finfo os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+
+			// fill in header info using func FileInfoHeader
+			hdr, err := tar.FileInfoHeader(finfo, finfo.Name())
+			if err != nil {
+				return err
+			}
+
+			relFilePath := file
+			if filepath.IsAbs(path) {
+				relFilePath, err = filepath.Rel(path, file)
+				if err != nil {
+					return err
+				}
+			}
+			// ensure header has relative file path
+			hdr.Name = relFilePath
+
+			if err := tw.WriteHeader(hdr); err != nil {
+				return err
+			}
+			// if path is a dir, dont continue
+			if finfo.Mode().IsDir() {
+				return nil
+			}
+
+			// add file to tar
+			srcFile, err := os.Open(file)
+			if err != nil {
+				return err
+			}
+			defer func() {
+				_ = srcFile.Close()
+			}()
+			_, err = io.Copy(tw, srcFile)
+			if err != nil {
+				return err
+			}
+			return nil
+		}
+
+		// build tar
+		if err := filepath.Walk(path, walker); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func untarFile(tarPath, dest string) error {
 	tarUnwrite := func(file string) error {
 		tarFile, err := os.Open(file)
@@ -74,11 +173,6 @@ func untarFile(tarPath, dest string) error {
 			if err != nil {
 				return err
 			}
-			//printInfo(fmt.Sprintf("Contents of %s: ", hdr.Name))
-			//if _, err := io.Copy(os.Stdout, tr); err != nil {
-			//	return err
-			//}
-			// determine proper file path info
 			finfo := hdr.FileInfo()
 			fileName := hdr.Name
 			absFileName := filepath.Join(dest, fileName)
@@ -196,4 +290,68 @@ func createIfNotExists(dir string, perm os.FileMode) error {
 	}
 
 	return nil
+}
+
+func isDirEmpty(name string) (bool, error) {
+	f, err := os.Open(name)
+	if err != nil {
+		return false, err
+	}
+	defer f.Close()
+
+	_, err = f.Readdirnames(1) // Or f.Readdir(1)
+	if err == io.EOF {
+		return true, nil
+	}
+	return false, err // Either not empty or error, suits both cases
+}
+
+//deploy
+func uploadFile(link, source, user, pass string) error {
+	data, err := os.Open(source)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = data.Close()
+	}()
+	req, err := http.NewRequest("PUT", link, data)
+	if err != nil {
+		return err
+	}
+	md5, err := md5sum(source)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "text/plain")
+	req.Header.Set("X-CheckSum-MD5", md5)
+	req.SetBasicAuth(user, pass)
+
+	client := &http.Client{}
+	res, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = res.Body.Close()
+	}()
+	if res.StatusCode != http.StatusCreated {
+		return errors.New(res.Status)
+	}
+	return nil
+}
+
+func md5sum(file string) (string, error) {
+	hasher := md5.New()
+	f, err := os.Open(file)
+	if err != nil {
+		return "", err
+	}
+	defer func() {
+		_ = f.Close()
+	}()
+	if _, err := io.Copy(hasher, f); err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%x", hasher.Sum(nil)), nil
 }

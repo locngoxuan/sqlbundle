@@ -2,7 +2,5 @@
   "group": "com.fortna.athena",
   "artifact": "database",
   "version": "0.1.0",
-  "dependencies": [
-    "http://localhost:8081/artifactory/example-repo-local/com/fortna/athena/database/1.0.0-SNAPSHOT/example-v1.0.0-SNAPSHOT.tar"
-  ]
+  "dependencies": []
 }

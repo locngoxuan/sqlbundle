@@ -13,12 +13,15 @@ type Command struct {
 }
 
 type Argument struct {
-	Version  string
-	Group    string
-	Artifact string
-	Workdir  string
-	Filename string
-	Force    bool
+	Version    string
+	Group      string
+	Artifact   string
+	Workdir    string
+	Filename   string
+	Force      bool
+	Repository string
+	Username   string
+	Password   string
 }
 
 func ReadArgument() (cmd Command, err error) {
@@ -37,6 +40,9 @@ func ReadArgument() (cmd Command, err error) {
 		f.StringVar(&cmd.Argument.Workdir, "workdir", "", "")
 		f.StringVar(&cmd.Argument.Filename, "file", "", "")
 		f.BoolVar(&cmd.Argument.Force, "force", false, "")
+		f.StringVar(&cmd.Argument.Repository, "repo", "", "")
+		f.StringVar(&cmd.Argument.Username, "user", "", "")
+		f.StringVar(&cmd.Argument.Password, "pass", "", "")
 		err = f.Parse(os.Args[2:])
 	}
 	return
