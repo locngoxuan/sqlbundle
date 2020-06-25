@@ -10,6 +10,7 @@ import (
 	"strings"
 )
 
+var version = "1.0.0"
 var sqlTemplate = `-- up statement
 -- TODO: write sql statement here
 -- end up
@@ -60,11 +61,30 @@ func Handle(command string, bundle SQLBundle) error {
 		return bundle.Pack()
 	case "publish":
 		return bundle.Publish()
+	case "version":
+		printInfo(fmt.Sprintf("Version %s", version))
+		return nil
 	case "upgrade":
 	case "downgrade":
 		return nil
 	}
 	return nil
+}
+
+func (sb *SQLBundle) ReadVersion() string {
+	if isEmpty(sb.Argument.Version) {
+		err := sb.readConfig()
+		if err != nil {
+			printInfo(err)
+			os.Exit(1)
+		}
+		if isEmpty(sb.Config.Version) {
+			printInfo("not found version from package.json")
+			os.Exit(1)
+		}
+		return strings.TrimSpace(sb.Config.Version)
+	}
+	return strings.TrimSpace(sb.Argument.Version)
 }
 
 func (sb *SQLBundle) Init() error {
@@ -236,35 +256,53 @@ func (sb *SQLBundle) Pack() error {
 		return err
 	}
 
-	err = os.MkdirAll(filepath.Join(packDirPath, "deps"), 0755)
+	//write package json
+	f, err := os.Create(filepath.Join(packDirPath, PACKAGE_JSON))
 	if err != nil {
 		return err
 	}
+	if f == nil {
+		return errors.New("can not create file " + sb.ConfigFile)
+	}
+	defer func() {
+		_ = f.Close()
+	}()
 
-	err = copyFile(sb.ConfigFile, filepath.Join(packDirPath, PACKAGE_JSON))
+	newConfig := *sb.Config
+	newConfig.Version = sb.ReadVersion()
+	bytes, err := json.MarshalIndent(newConfig, "", "  ")
 	if err != nil {
 		return err
 	}
+	_, err = io.WriteString(f, string(bytes))
+	//end write package json
 
 	err = copyDirectory(sb.SourceDir, filepath.Join(packDirPath, "src"))
 	if err != nil {
 		return err
 	}
 
-	err = copyDirectory(sb.DepsDir, filepath.Join(packDirPath, "deps"))
+	if exists(sb.DepsDir) {
+		err = os.MkdirAll(filepath.Join(packDirPath, "deps"), 0755)
+		if err != nil {
+			return err
+		}
+
+		err = copyDirectory(sb.DepsDir, filepath.Join(packDirPath, "deps"))
+		if err != nil {
+			return err
+		}
+
+		if ok, _ := isDirEmpty(filepath.Join(packDirPath, "deps")); ok {
+			_ = os.RemoveAll(filepath.Join(packDirPath, "deps"))
+		}
+	}
+
 	if err != nil {
 		return err
 	}
 
-	if ok, _ := isDirEmpty(filepath.Join(packDirPath, "deps")); ok {
-		_ = os.RemoveAll(filepath.Join(packDirPath, "deps"))
-	}
-
-	if err != nil {
-		return err
-	}
-
-	dest := filepath.Join(sb.BuildDir, fmt.Sprintf("%s-%s.tar", sb.Config.ArtifactId, sb.Config.Version))
+	dest := filepath.Join(sb.BuildDir, fmt.Sprintf("%s-%s.tar", sb.Config.ArtifactId, sb.ReadVersion()))
 	return tarFile(dest, []string{packDirPath})
 }
 
@@ -278,7 +316,7 @@ func (sb *SQLBundle) Publish() error {
 		return err
 	}
 
-	tarName := fmt.Sprintf("%s-%s.tar", sb.Config.ArtifactId, sb.Config.Version)
+	tarName := fmt.Sprintf("%s-%s.tar", sb.Config.ArtifactId, sb.ReadVersion())
 	tarFile := filepath.Join(sb.BuildDir, tarName)
 	_, err = os.Stat(tarFile)
 	if err != nil {
@@ -286,7 +324,7 @@ func (sb *SQLBundle) Publish() error {
 	}
 	args := strings.Split(sb.Config.GroupId, ".")
 	args = append(args, sb.Config.ArtifactId)
-	args = append(args, sb.Config.Version)
+	args = append(args, sb.ReadVersion())
 	modulePath := strings.Join(args, "/")
 
 	link := fmt.Sprintf("%s/%s/%s", sb.Repository, modulePath, tarName)
