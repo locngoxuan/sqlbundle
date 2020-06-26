@@ -1,11 +1,14 @@
 --+up BEGIN
-CREATE TABLE IF NOT EXISTS first (
-  ID serial NOT NULL,
-  NAME varchar(100),
+CREATE SEQUENCE oracle_first_seq START WITH 1 increment by 1;
+
+CREATE TABLE oracle_first (
+  ID NUMBER(19, 0) DEFAULT oracle_first_seq.nextval NOT NULL,
+  NAME varchar2(100),
   PRIMARY KEY(ID)
 );
 --+up END
 
 --+down BEGIN
-DROP TABLE IF EXISTS first;
+DROP SEQUENCE oracle_first_seq;
+DROP TABLE oracle_first;
 --+down END
