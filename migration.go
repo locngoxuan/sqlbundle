@@ -183,6 +183,11 @@ func parseStatements(filePath string, up bool) (stmts []string, err error) {
 			continue
 		}
 
+		if stateMachine == PARSER_START {
+			//ignore line due to parser still in started state
+			continue
+		}
+
 		line = strings.TrimSpace(line)
 		if strings.TrimSpace(line) == "" {
 			//ignore empty line

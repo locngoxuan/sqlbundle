@@ -113,7 +113,7 @@ func (sb *SQLBundle) Downgrade() error {
 
 		for _, statement := range statements {
 			if _, err = tx.ExecContext(ctx, statement); err != nil {
-				printInfo(fmt.Sprintf("Fail to execute query %s", statements), err)
+				printInfo(fmt.Sprintf("Fail to execute query %s", statement), err)
 				_ = tx.Rollback()
 				return err
 			}
