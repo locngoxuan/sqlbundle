@@ -18,14 +18,7 @@ func OpenDBWithDriver(driver string, dbstring string) (*sql.DB, error) {
 
 	switch driver {
 	case "postgres", "godror":
-		db, err := sql.Open(driver, dbstring)
-		if err != nil {
-			return nil, err
-		}
-		db.SetMaxIdleConns(1)
-		db.SetMaxOpenConns(1)
-		db.SetConnMaxLifetime(0)
-		return db, nil
+		return sql.Open(driver, dbstring)
 	default:
 		return nil, fmt.Errorf("unsupported driver %s", driver)
 	}
