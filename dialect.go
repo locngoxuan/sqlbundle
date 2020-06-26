@@ -24,7 +24,7 @@ type DbHistory struct {
 type SQLDialect interface {
 	dbVersionQuery(db *sql.DB) (*sql.Rows, error)
 	dbHistoryQuery(db *sql.DB) (*sql.Rows, error)
-	createTable() string
+	createTable() []string
 	insertVersion() string
 	insertHistory() string
 	deleteHistory() string
@@ -37,17 +37,17 @@ var dialect SQLDialect = &PostgresDialect{}
 // Postgres
 ////////////////////////////
 
-type PostgresDialect struct {}
+type PostgresDialect struct{}
 
-func (pg PostgresDialect) createTable() string {
-	return `CREATE TABLE db_versions (
+func (pg PostgresDialect) createTable() []string {
+	return []string{
+		`CREATE TABLE db_versions (
             	id serial NOT NULL,
                 version varchar(255) NOT NULL,
                 timestamp timestamp NULL default now(),
                 PRIMARY KEY(id)
-            );
-
-			CREATE TABLE db_histories (
+            );`,
+		`CREATE TABLE db_histories (
             	id serial NOT NULL,
                 version varchar(255) NOT NULL,
 				dep_name text,
@@ -55,7 +55,9 @@ func (pg PostgresDialect) createTable() string {
 				file_name text NOT NULL,
                 timestamp timestamp NULL default now(),
                 PRIMARY KEY(id)
-            );`
+            );`,
+	}
+
 }
 
 func (pg PostgresDialect) dbVersionQuery(db *sql.DB) (*sql.Rows, error) {
@@ -90,6 +92,66 @@ func (pg PostgresDialect) deleteHistory() string {
 	return fmt.Sprintf("DELETE FROM db_histories WHERE dep_name = $1 AND dep_version = $2 AND file_name = $3")
 }
 
+////////////////////////////
+// Oracle
+////////////////////////////
+
+type OracleDialect struct{}
+
+func (pg OracleDialect) createTable() []string {
+	return []string{
+		`CREATE SEQUENCE db_version_seq START WITH 1 increment by 1`,
+		`CREATE SEQUENCE db_history_seq START WITH 1 increment by 1`,
+		`CREATE TABLE db_versions (
+			id NUMBER(19) DEFAULT db_version_seq.nextval NOT NULL,
+			version varchar(255) NOT NULL,
+			timestamp timestamp default CURRENT_TIMESTAMP,
+			PRIMARY KEY(id)
+		)`,
+		`CREATE TABLE db_histories (
+			id NUMBER(19) DEFAULT db_history_seq.nextval NOT NULL,
+			version varchar(255) NOT NULL,
+			dep_name varchar(1024),
+			dep_version varchar(255),
+			file_name varchar(1024) NOT NULL,
+			timestamp timestamp default CURRENT_TIMESTAMP,
+			PRIMARY KEY(id)
+		)`,
+	}
+}
+
+func (pg OracleDialect) dbVersionQuery(db *sql.DB) (*sql.Rows, error) {
+	rows, err := db.Query(fmt.Sprintf(`SELECT id, version from db_versions ORDER BY id DESC`))
+	if err != nil {
+		return nil, err
+	}
+	return rows, err
+}
+
+func (pg OracleDialect) dbHistoryQuery(db *sql.DB) (*sql.Rows, error) {
+	rows, err := db.Query(fmt.Sprintf(`SELECT id, version, dep_name, dep_version, file_name from db_histories ORDER BY id DESC`))
+	if err != nil {
+		return nil, err
+	}
+	return rows, err
+}
+
+func (pg OracleDialect) insertVersion() string {
+	return fmt.Sprintf("INSERT INTO db_versions (version) VALUES (:1)")
+}
+
+func (pg OracleDialect) insertHistory() string {
+	return fmt.Sprintf("INSERT INTO db_histories (version, dep_name, dep_version, file_name) VALUES (:1, :2, :3, :4)")
+}
+
+func (pg OracleDialect) deleteVersion() string {
+	return fmt.Sprintf("DELETE FROM db_versions WHERE version = :1")
+}
+
+func (pg OracleDialect) deleteHistory() string {
+	return fmt.Sprintf("DELETE FROM db_histories WHERE dep_name = :1 AND dep_version = :2 AND file_name = :3")
+}
+
 func GetDialect() SQLDialect {
 	return dialect
 }
@@ -101,7 +163,7 @@ func SetDialect(d string) error {
 		dialect = &PostgresDialect{}
 		break
 	case "oracle":
-		//dialect = &OracleDialect{}
+		dialect = &OracleDialect{}
 	default:
 		return fmt.Errorf("%q: unknown dialect", d)
 	}

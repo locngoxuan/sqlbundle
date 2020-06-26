@@ -11,7 +11,11 @@ dev:
 release:
 	env CGO_ENABLED=1 go build -ldflags="-s -w" -o ./bin/${SQLBUNDLE_BUILD} -a ./cmd
 	env GOOS=linux GOARCH=amd64 CGO_ENABLED=1 go build -ldflags="-s -w" -o ./bin/${SQLBUNDLE_BUILD}-linux -a ./cmd
-	env GOOS=darwin GOARCH=amd64 CGO_ENABLED=1 go build -ldflags="-s -w" -o ./bin/${SQLBUNDLE_BUILD}-darwin -a ./cmd
+
+release-pgonly:
+	env CGO_ENABLED=0 go build -tags='no_oracle' -ldflags="-s -w" -o ./bin/${SQLBUNDLE_BUILD} -a ./cmd
+	env GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -tags='no_oracle' -ldflags="-s -w" -o ./bin/${SQLBUNDLE_BUILD}-linux -a ./cmd
+	env GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 go build -tags='no_oracle' -ldflags="-s -w" -o ./bin/${SQLBUNDLE_BUILD}-darwin -a ./cmd
 	env GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -tags='no_oracle' -o ./bin/${SQLBUNDLE_BUILD}-wins.exe -a ./cmd
 
 release-nodb:

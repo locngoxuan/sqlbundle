@@ -1,6 +1,7 @@
 package sqlbundle
 
 import (
+	"context"
 	"fmt"
 	"strings"
 )
@@ -54,15 +55,18 @@ func (sb *SQLBundle) Upgrade() error {
 		script.ignore(h.DepName, h.File)
 	}
 
-	tx, err := db.Begin()
+	ctx := context.Background()
+	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 	sqlFiles := script.notIgnored()
 
 	d := GetDialect()
-	historyStatement, err := tx.Prepare(d.insertHistory())
+	historyStatement, err := tx.PrepareContext(ctx, d.insertHistory())
 	if err != nil {
+		printInfo("Fail to prepare insert statement of new version of database", err)
+		_ = tx.Rollback()
 		return err
 	}
 
@@ -73,36 +77,40 @@ func (sb *SQLBundle) Upgrade() error {
 		}
 
 		for _, statement := range statements {
-			if _, err = tx.Exec(statement); err != nil {
-				printInfo(fmt.Sprintf("Fail to execute query %s", statements), err)
-				printInfo("Rollback transaction")
+			if _, err = tx.ExecContext(ctx, statement); err != nil {
+				printInfo(fmt.Sprintf("Fail to execute query %s", statement), err)
 				_ = tx.Rollback()
 				return err
 			}
 		}
 		printInfo(fmt.Sprintf("Apply%s%s", strings.Repeat(" ", 10), sql.FileName))
-		_, err = historyStatement.Exec(sb.ReadVersion(), fmt.Sprintf("%s.%s", sql.Group, sql.Artifact), sql.Version, sql.FileName)
+		_, err = historyStatement.ExecContext(ctx, sb.ReadVersion(), fmt.Sprintf("%s.%s", sql.Group, sql.Artifact), sql.Version, sql.FileName)
 		if err != nil {
+			printInfo("Fail to insert history of database", err)
 			_ = tx.Rollback()
 			return err
 		}
 	}
 
-	versionStatement, err := tx.Prepare(d.insertVersion())
+	versionStatement, err := tx.PrepareContext(ctx, d.insertVersion())
 	if err != nil {
+		printInfo("Fail to prepare insert statement of new version of database", err)
 		_ = tx.Rollback()
 		return err
 	}
 
-	_, err = versionStatement.Exec(sb.ReadVersion())
+	_, err = versionStatement.ExecContext(ctx, sb.ReadVersion())
 	if err != nil {
+		printInfo("Fail to insert new version of database", err)
 		_ = tx.Rollback()
 		return err
 	}
 
 	if err := tx.Commit(); err != nil {
+		printInfo("Can not apply change in database", err)
 		_ = tx.Rollback()
 		return err
 	}
+	printInfo("Upgrade successful!")
 	return nil
 }

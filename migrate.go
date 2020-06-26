@@ -2,6 +2,7 @@ package sqlbundle
 
 import (
 	"database/sql"
+	"fmt"
 )
 
 func createVersionTable(db *sql.DB) error {
@@ -12,9 +13,13 @@ func createVersionTable(db *sql.DB) error {
 
 	d := GetDialect()
 
-	if _, err = txn.Exec(d.createTable()); err != nil {
-		_ = txn.Rollback()
-		return err
+	stmts := d.createTable()
+	for _, stmt := range stmts {
+		if _, err = txn.Exec(stmt); err != nil {
+			printInfo(fmt.Sprintf("Fail to execute create table statements %s", stmt))
+			_ = txn.Rollback()
+			return err
+		}
 	}
 	if err = txn.Commit(); err != nil {
 		_ = txn.Rollback()

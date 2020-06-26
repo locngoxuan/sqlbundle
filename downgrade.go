@@ -1,6 +1,7 @@
 package sqlbundle
 
 import (
+	"context"
 	"fmt"
 	"strings"
 )
@@ -59,7 +60,7 @@ func (sb *SQLBundle) Downgrade() error {
 		}
 	}
 
-	if len(downgrades) == 0{
+	if len(downgrades) == 0 {
 		printInfo("not found any version for downgrading")
 		return nil
 	}
@@ -83,7 +84,8 @@ func (sb *SQLBundle) Downgrade() error {
 		script.ignore(h.DepName, h.File)
 	}
 
-	tx, err := db.Begin()
+	ctx := context.Background()
+	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
@@ -91,9 +93,11 @@ func (sb *SQLBundle) Downgrade() error {
 	for i, j := 0, len(sqlFiles)-1; i < j; i, j = i+1, j-1 {
 		sqlFiles[i], sqlFiles[j] = sqlFiles[j], sqlFiles[i]
 	}
+
 	d := GetDialect()
-	historyStatement, err := tx.Prepare(d.deleteHistory())
+	historyStatement, err := tx.PrepareContext(ctx, d.deleteHistory())
 	if err != nil {
+		printInfo("Fail to prepare delete statement of specific version of database", err)
 		return err
 	}
 
@@ -108,38 +112,42 @@ func (sb *SQLBundle) Downgrade() error {
 		}
 
 		for _, statement := range statements {
-			if _, err = tx.Exec(statement); err != nil {
+			if _, err = tx.ExecContext(ctx, statement); err != nil {
 				printInfo(fmt.Sprintf("Fail to execute query %s", statements), err)
-				printInfo("Rollback transaction")
 				_ = tx.Rollback()
 				return err
 			}
 		}
 		printInfo(fmt.Sprintf("Redo%s%s", strings.Repeat(" ", 10), sql.FileName))
-		_, err = historyStatement.Exec(fmt.Sprintf("%s.%s", sql.Group, sql.Artifact), sql.Version, sql.FileName)
+		_, err = historyStatement.ExecContext(ctx, fmt.Sprintf("%s.%s", sql.Group, sql.Artifact), sql.Version, sql.FileName)
 		if err != nil {
+			printInfo("Fail to redo history of database", err)
 			_ = tx.Rollback()
 			return err
 		}
 	}
 
-	versionStatement, err := tx.Prepare(d.deleteVersion())
+	versionStatement, err := tx.PrepareContext(ctx, d.deleteVersion())
 	if err != nil {
+		printInfo("Fail to prepare delete statement of specific version of database", err)
 		_ = tx.Rollback()
 		return err
 	}
 
 	for _, ver := range downgrades {
-		_, err = versionStatement.Exec(ver)
+		_, err = versionStatement.ExecContext(ctx, ver)
 		if err != nil {
+			printInfo("Fail to delete version of database", err)
 			_ = tx.Rollback()
 			return err
 		}
 	}
 
 	if err := tx.Commit(); err != nil {
+		printInfo("Can not apply change in database", err)
 		_ = tx.Rollback()
 		return err
 	}
+	printInfo("Downgrade successful!")
 	return nil
 }

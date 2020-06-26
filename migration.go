@@ -189,13 +189,14 @@ func parseStatements(filePath string, up bool) (stmts []string, err error) {
 			continue
 		}
 
-		if _, err = buf.WriteString(line + " "); err != nil {
+		if _, err = buf.WriteString(line + "\n"); err != nil {
 			break
 			//return nil, false, errors.Wrap(err, "failed to write to buf")
 		}
 
 		if strings.HasSuffix(line, ";") {
 			statement := buf.String()
+			statement = strings.TrimSuffix(statement, ";\n")
 			buf.Reset()
 			stmts = append(stmts, statement)
 		}
