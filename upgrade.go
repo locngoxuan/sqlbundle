@@ -1,7 +1,6 @@
 package sqlbundle
 
 import (
-	"context"
 	"fmt"
 	"strings"
 )
@@ -55,20 +54,23 @@ func (sb *SQLBundle) Upgrade() error {
 		script.ignore(h.DepName, h.File)
 	}
 
-	ctx := context.Background()
-	tx, err := db.BeginTx(ctx, nil)
+	tx, err := db.Begin()
 	if err != nil {
 		return err
 	}
 	sqlFiles := script.notIgnored()
 
 	d := GetDialect()
-	historyStatement, err := tx.PrepareContext(ctx, d.insertHistory())
+	historyStatement, err := tx.Prepare(d.insertHistory())
 	if err != nil {
 		printInfo("Fail to prepare insert statement of new version of database", err)
 		_ = tx.Rollback()
 		return err
 	}
+
+	defer func() {
+		_ = historyStatement.Close()
+	}()
 
 	for _, sql := range sqlFiles {
 		statements, err := parseStatements(sql.FilePath, true)
@@ -77,14 +79,15 @@ func (sb *SQLBundle) Upgrade() error {
 		}
 
 		for _, statement := range statements {
-			if _, err = tx.ExecContext(ctx, statement); err != nil {
+			if _, err = tx.Exec(statement); err != nil {
 				printInfo(fmt.Sprintf("Fail to execute query %s", statement), err)
 				_ = tx.Rollback()
 				return err
 			}
 		}
 		printInfo(fmt.Sprintf("Apply%s%s", strings.Repeat(" ", 10), sql.FileName))
-		_, err = historyStatement.ExecContext(ctx, sb.ReadVersion(), fmt.Sprintf("%s.%s", sql.Group, sql.Artifact), sql.Version, sql.FileName)
+		_, err = historyStatement.Exec(sb.ReadVersion(), fmt.Sprintf("%s.%s", sql.Group, sql.Artifact), sql.Version, sql.FileName)
+
 		if err != nil {
 			printInfo("Fail to insert history of database", err)
 			_ = tx.Rollback()
@@ -92,14 +95,18 @@ func (sb *SQLBundle) Upgrade() error {
 		}
 	}
 
-	versionStatement, err := tx.PrepareContext(ctx, d.insertVersion())
+	versionStatement, err := tx.Prepare(d.insertVersion())
 	if err != nil {
 		printInfo("Fail to prepare insert statement of new version of database", err)
 		_ = tx.Rollback()
 		return err
 	}
 
-	_, err = versionStatement.ExecContext(ctx, sb.ReadVersion())
+	defer func() {
+		_ = versionStatement.Close()
+	}()
+
+	_, err = versionStatement.Exec(sb.ReadVersion())
 	if err != nil {
 		printInfo("Fail to insert new version of database", err)
 		_ = tx.Rollback()

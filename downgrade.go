@@ -1,7 +1,6 @@
 package sqlbundle
 
 import (
-	"context"
 	"fmt"
 	"strings"
 )
@@ -84,8 +83,7 @@ func (sb *SQLBundle) Downgrade() error {
 		script.ignore(h.DepName, h.File)
 	}
 
-	ctx := context.Background()
-	tx, err := db.BeginTx(ctx, nil)
+	tx, err := db.Begin()
 	if err != nil {
 		return err
 	}
@@ -95,11 +93,15 @@ func (sb *SQLBundle) Downgrade() error {
 	}
 
 	d := GetDialect()
-	historyStatement, err := tx.PrepareContext(ctx, d.deleteHistory())
+	historyStatement, err := tx.Prepare(d.deleteHistory())
 	if err != nil {
 		printInfo("Fail to prepare delete statement of specific version of database", err)
 		return err
 	}
+
+	defer func() {
+		_ = historyStatement.Close()
+	}()
 
 	for _, sql := range sqlFiles {
 		_, ok := applied[fmt.Sprintf("%s.%s-%s", sql.Group, sql.Artifact, sql.FileName)]
@@ -112,14 +114,14 @@ func (sb *SQLBundle) Downgrade() error {
 		}
 
 		for _, statement := range statements {
-			if _, err = tx.ExecContext(ctx, statement); err != nil {
+			if _, err = tx.Exec(statement); err != nil {
 				printInfo(fmt.Sprintf("Fail to execute query %s", statement), err)
 				_ = tx.Rollback()
 				return err
 			}
 		}
 		printInfo(fmt.Sprintf("Redo%s%s", strings.Repeat(" ", 10), sql.FileName))
-		_, err = historyStatement.ExecContext(ctx, fmt.Sprintf("%s.%s", sql.Group, sql.Artifact), sql.Version, sql.FileName)
+		_, err = historyStatement.Exec(fmt.Sprintf("%s.%s", sql.Group, sql.Artifact), sql.Version, sql.FileName)
 		if err != nil {
 			printInfo("Fail to redo history of database", err)
 			_ = tx.Rollback()
@@ -127,15 +129,19 @@ func (sb *SQLBundle) Downgrade() error {
 		}
 	}
 
-	versionStatement, err := tx.PrepareContext(ctx, d.deleteVersion())
+	versionStatement, err := tx.Prepare(d.deleteVersion())
 	if err != nil {
 		printInfo("Fail to prepare delete statement of specific version of database", err)
 		_ = tx.Rollback()
 		return err
 	}
 
+	defer func() {
+		_ = versionStatement.Close()
+	}()
+
 	for _, ver := range downgrades {
-		_, err = versionStatement.ExecContext(ctx, ver)
+		_, err = versionStatement.Exec(ver)
 		if err != nil {
 			printInfo("Fail to delete version of database", err)
 			_ = tx.Rollback()
