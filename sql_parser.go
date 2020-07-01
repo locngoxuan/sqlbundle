@@ -21,9 +21,13 @@ func parseStatements(filePath string, up bool) (stmts []string, err error) {
 
 	for scanner.Scan() {
 		if (stateMachine == PARSER_UP_END && up) || (stateMachine == PARSER_DOWN_END && !up) {
-			statement := buf.String()
-			buf.Reset()
-			stmts = append(stmts, statement)
+			if buf.Len() > 0 {
+				statement := buf.String()
+				buf.Reset()
+				if strings.TrimSpace(statement) != "" {
+					stmts = append(stmts, statement)
+				}
+			}
 			break
 		}
 		line := scanner.Text()
@@ -37,6 +41,13 @@ func parseStatements(filePath string, up bool) (stmts []string, err error) {
 				stateMachine = PARSER_DOWN_BEGIN
 			} else if strings.HasPrefix(cmd, "+down END") && stateMachine == PARSER_DOWN_BEGIN {
 				stateMachine = PARSER_DOWN_END
+				if buf.Len() > 0 {
+					statement := buf.String()
+					buf.Reset()
+					if strings.TrimSpace(statement) != "" {
+						stmts = append(stmts, statement)
+					}
+				}
 			} else {
 				// ignore comment
 			}
@@ -58,13 +69,6 @@ func parseStatements(filePath string, up bool) (stmts []string, err error) {
 			break
 			//return nil, false, errors.Wrap(err, "failed to write to buf")
 		}
-
-		//if strings.HasSuffix(line, ";") {
-		//	statement := buf.String()
-		//	statement = strings.TrimSuffix(statement, ";\n")
-		//	buf.Reset()
-		//	stmts = append(stmts, statement)
-		//}
 	}
 	if err = scanner.Err(); err != nil {
 		return nil, err
