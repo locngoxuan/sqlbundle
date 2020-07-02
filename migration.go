@@ -3,6 +3,7 @@ package sqlbundle
 import (
 	"errors"
 	"fmt"
+	"github.com/jedib0t/go-pretty/table"
 	"os"
 	"path"
 	"path/filepath"
@@ -30,11 +31,15 @@ type MigrationSQL struct {
 }
 
 func (ms *MigrationScript) ListAll() {
+	t := table.NewWriter()
+	t.SetOutputMirror(os.Stdout)
+	t.AppendHeader(table.Row{"Group", "Artifact", "Version", "File"})
 	s := ms
 	for s != nil {
-		printInfo(s.Group, s.Artifact, s.Version, s.FilePath)
+		t.AppendRow(table.Row{s.Group, s.Artifact, s.Version, s.FileName})
 		s = s.NextScript
 	}
+	t.Render()
 }
 
 func (ms *MigrationScript) notIgnored() []MigrationSQL {
@@ -119,6 +124,7 @@ func collectMigrations(sb SQLBundle, script *MigrationScript) (err error) {
 		for _, depLink := range sb.Config.Dependencies {
 			depName := path.Base(depLink)
 			depName = strings.TrimSuffix(depName, filepath.Ext(depName))
+			depName = fmt.Sprintf("%s_%s", depName, getMD5Hash(depLink))
 			depPath := filepath.Join(sb.DepsDir, depName)
 			if !exists(depPath) {
 				err = errors.New("not found dependence " + depLink)

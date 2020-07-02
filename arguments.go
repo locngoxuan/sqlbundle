@@ -17,6 +17,7 @@ COMMAND:
   pack          Packing
   clean         Remove build directory
   publish       Deploy package to repository
+  list          List all migrations file
   version       Print version of sql-bundle
   upgrade       Upgrade database to latest version 
   downgrade     Downgrade database to previous version or any specific version
@@ -63,6 +64,7 @@ func ReadArgument() (cmd Command, err error) {
 	f.StringVar(&cmd.Argument.Password, "pass", "", "repository credential")
 	f.StringVar(&cmd.Argument.DBDriver, "db-driver", "", "database driver")
 	f.StringVar(&cmd.Argument.DBString, "db-connection", "", "connection string of database")
+	f.BoolVar(&verbose, "verbose", false, "print more log")
 	f.Usage = func() {
 		/**
 		Do nothing

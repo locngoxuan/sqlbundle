@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-var version = "1.0.0"
+var version = "1.1.0"
 var sqlTemplate = `--+up BEGIN
 -- TODO: write sql statement here
 --+up END
@@ -18,6 +18,7 @@ var sqlTemplate = `--+up BEGIN
 --+down BEGIN
 -- TODO: write sql statement here
 --+down END`
+var verbose = false
 
 type SQLBundle struct {
 	Argument
@@ -47,6 +48,12 @@ func printInfo(v ...interface{}) {
 	_, _ = fmt.Fprintln(os.Stdout, v...)
 }
 
+func printDebug(v ...interface{}) {
+	if verbose {
+		printInfo(v...)
+	}
+}
+
 func Handle(command string, bundle SQLBundle) error {
 	switch command {
 	case "init":
@@ -64,6 +71,8 @@ func Handle(command string, bundle SQLBundle) error {
 	case "version":
 		printInfo(fmt.Sprintf("Version %s", version))
 		return nil
+	case "list":
+		return bundle.ListMigrations()
 	case "upgrade":
 		if isEmpty(bundle.Argument.DBDriver) || isEmpty(bundle.Argument.DBString) {
 			return errors.New("missing database driver/connection string configuration")
@@ -179,6 +188,12 @@ func (sb *SQLBundle) readConfig() error {
 			return err
 		}
 		sb.Config = &config
+		if sb.Config.Dependencies == nil {
+			sb.Config.Dependencies = make([]string, 0)
+		}
+		printDebug(fmt.Sprintf("Read package.json at %s", sb.ConfigFile))
+		printDebug(fmt.Sprintf("==> group %s | artifact %s | version %s", sb.Config.GroupId, sb.Config.ArtifactId, sb.Config.Version))
+		printDebug(fmt.Sprintf("==> dependencises %v", sb.Config.Dependencies))
 	}
 	return nil
 }
@@ -224,6 +239,7 @@ func (sb *SQLBundle) Install() error {
 		}
 		_, tarFile := filepath.Split(tarPath)
 		tarFile = strings.TrimSuffix(tarFile, filepath.Ext(tarFile))
+		tarFile = fmt.Sprintf("%s_%s", tarFile, getMD5Hash(dep))
 		dest := filepath.Join(sb.DepsDir, tarFile)
 		err = os.MkdirAll(dest, 0755)
 		if err != nil {
@@ -233,6 +249,7 @@ func (sb *SQLBundle) Install() error {
 		if err != nil {
 			return err
 		}
+
 		err = os.RemoveAll(tarPath)
 		if err != nil {
 			return err

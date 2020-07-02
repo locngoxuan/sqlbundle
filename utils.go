@@ -3,6 +3,7 @@ package sqlbundle
 import (
 	"archive/tar"
 	"crypto/md5"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -354,4 +355,13 @@ func md5sum(file string) (string, error) {
 		return "", err
 	}
 	return fmt.Sprintf("%x", hasher.Sum(nil)), nil
+}
+
+func getMD5Hash(text string) string {
+	hasher := md5.New()
+	hasher.Write([]byte(text))
+	defer func() {
+		hasher.Reset()
+	}()
+	return hex.EncodeToString(hasher.Sum(nil))
 }
