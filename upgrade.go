@@ -73,7 +73,7 @@ func (sb *SQLBundle) Upgrade() error {
 	}()
 
 	for _, sql := range sqlFiles {
-		statements, err := parseStatements(sql.FilePath, true)
+		statements, err := d.parseStatement(sql.FilePath, true)
 		if err != nil {
 			return err
 		}

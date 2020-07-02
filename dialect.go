@@ -29,6 +29,7 @@ type SQLDialect interface {
 	insertHistory() string
 	deleteHistory() string
 	deleteVersion() string
+	parseStatement(filePath string, up bool) ([]string, error)
 }
 
 var dialect SQLDialect = &PostgresDialect{}
@@ -98,7 +99,7 @@ func (pg PostgresDialect) deleteHistory() string {
 
 type OracleDialect struct{}
 
-func (pg OracleDialect) createTable() []string {
+func (od OracleDialect) createTable() []string {
 	return []string{
 		`CREATE SEQUENCE db_version_seq START WITH 1 increment by 1`,
 		`CREATE SEQUENCE db_history_seq START WITH 1 increment by 1`,
@@ -120,7 +121,7 @@ func (pg OracleDialect) createTable() []string {
 	}
 }
 
-func (pg OracleDialect) dbVersionQuery(db *sql.DB) (*sql.Rows, error) {
+func (od OracleDialect) dbVersionQuery(db *sql.DB) (*sql.Rows, error) {
 	rows, err := db.Query(fmt.Sprintf(`SELECT id, version from db_versions ORDER BY id DESC`))
 	if err != nil {
 		return nil, err
@@ -128,7 +129,7 @@ func (pg OracleDialect) dbVersionQuery(db *sql.DB) (*sql.Rows, error) {
 	return rows, err
 }
 
-func (pg OracleDialect) dbHistoryQuery(db *sql.DB) (*sql.Rows, error) {
+func (od OracleDialect) dbHistoryQuery(db *sql.DB) (*sql.Rows, error) {
 	rows, err := db.Query(fmt.Sprintf(`SELECT id, version, dep_name, dep_version, file_name from db_histories ORDER BY id DESC`))
 	if err != nil {
 		return nil, err
@@ -136,19 +137,19 @@ func (pg OracleDialect) dbHistoryQuery(db *sql.DB) (*sql.Rows, error) {
 	return rows, err
 }
 
-func (pg OracleDialect) insertVersion() string {
+func (od OracleDialect) insertVersion() string {
 	return fmt.Sprintf("INSERT INTO db_versions (version) VALUES (:1)")
 }
 
-func (pg OracleDialect) insertHistory() string {
+func (od OracleDialect) insertHistory() string {
 	return fmt.Sprintf("INSERT INTO db_histories (version, dep_name, dep_version, file_name) VALUES (:1, :2, :3, :4)")
 }
 
-func (pg OracleDialect) deleteVersion() string {
+func (od OracleDialect) deleteVersion() string {
 	return fmt.Sprintf("DELETE FROM db_versions WHERE version = :1")
 }
 
-func (pg OracleDialect) deleteHistory() string {
+func (od OracleDialect) deleteHistory() string {
 	return fmt.Sprintf("DELETE FROM db_histories WHERE dep_name = :1 AND dep_version = :2 AND file_name = :3")
 }
 

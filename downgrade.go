@@ -108,7 +108,7 @@ func (sb *SQLBundle) Downgrade() error {
 		if !ok {
 			continue
 		}
-		statements, err := parseStatements(sql.FilePath, false)
+		statements, err := d.parseStatement(sql.FilePath, false)
 		if err != nil {
 			return err
 		}

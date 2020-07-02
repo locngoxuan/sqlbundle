@@ -10,5 +10,6 @@ CREATE TABLE oracle_first (
 
 --+down BEGIN
 DROP SEQUENCE oracle_first_seq;
+
 DROP TABLE oracle_first;
 --+down END
