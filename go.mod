@@ -1,4 +1,4 @@
-module sqlbundle
+module cm.wcs.fortna.com/lngo/sqlbundle
 
 go 1.13
 
