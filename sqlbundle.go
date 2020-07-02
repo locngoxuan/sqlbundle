@@ -319,7 +319,7 @@ func (sb *SQLBundle) Pack() error {
 		return err
 	}
 
-	dest := filepath.Join(sb.BuildDir, fmt.Sprintf("%s-%s.tar", sb.Config.ArtifactId, sb.ReadVersion()))
+	dest := filepath.Join(sb.BuildDir, fmt.Sprintf("%s.tar", sb.Config.ArtifactId))
 	return tarFile(dest, []string{packDirPath})
 }
 
@@ -333,7 +333,7 @@ func (sb *SQLBundle) Publish() error {
 		return err
 	}
 
-	tarName := fmt.Sprintf("%s-%s.tar", sb.Config.ArtifactId, sb.ReadVersion())
+	tarName := fmt.Sprintf("%s.tar", sb.Config.ArtifactId)
 	tarFile := filepath.Join(sb.BuildDir, tarName)
 	_, err = os.Stat(tarFile)
 	if err != nil {
