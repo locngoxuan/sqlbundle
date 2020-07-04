@@ -3,10 +3,11 @@ package main
 import (
 	"fmt"
 	"os"
-	"sqlbundle"
+	"scm.wcs.fortna.com/lngo/sqlbundle"
 )
 
 func main() {
+	sqlbundle.SetLogWriter(os.Stdout)
 	cmd, err := sqlbundle.ReadArgument()
 	if err != nil {
 		_, _ = fmt.Fprintln(os.Stdout, err)
