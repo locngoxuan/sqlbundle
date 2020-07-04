@@ -30,9 +30,9 @@ type SQLBundle struct {
 	ConfigFile string
 }
 
-var logWriter = os.Stdout
+var logWriter io.Writer = os.Stdout
 
-func SetLogWriter(writer *os.File){
+func SetLogWriter(writer io.Writer){
 	logWriter = writer
 }
 
