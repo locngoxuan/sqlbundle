@@ -3,7 +3,7 @@ package sqlbundle
 import (
 	"errors"
 	"fmt"
-	"github.com/jedib0t/go-pretty/table"
+	"github.com/jedib0t/go-pretty/v6/table"
 	"os"
 	"path"
 	"path/filepath"
