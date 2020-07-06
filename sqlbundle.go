@@ -30,6 +30,12 @@ type SQLBundle struct {
 	ConfigFile string
 }
 
+var logWriter io.Writer = os.Stdout
+
+func SetLogWriter(writer io.Writer){
+	logWriter = writer
+}
+
 func NewSQLBundle(arg Argument) (bundle SQLBundle, err error) {
 	workDir := arg.WorkDir
 	if strings.TrimSpace(workDir) == "" {
@@ -45,7 +51,7 @@ func NewSQLBundle(arg Argument) (bundle SQLBundle, err error) {
 }
 
 func printInfo(v ...interface{}) {
-	_, _ = fmt.Fprintln(os.Stdout, v...)
+	_, _ = fmt.Fprintln(logWriter, v...)
 }
 
 func printDebug(v ...interface{}) {
