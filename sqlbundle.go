@@ -235,7 +235,7 @@ func (sb *SQLBundle) Install() error {
 	for _, dep := range sb.Config.Dependencies {
 		tarPath, err := downloadDependency(sb.DepsDir, dep)
 		if err != nil {
-			return err
+			return fmt.Errorf("download dependence get error %v", err)
 		}
 		_, tarFile := filepath.Split(tarPath)
 		tarFile = strings.TrimSuffix(tarFile, filepath.Ext(tarFile))
@@ -247,7 +247,7 @@ func (sb *SQLBundle) Install() error {
 		}
 		err = untarFile(tarPath, dest)
 		if err != nil {
-			return err
+			return fmt.Errorf("can not untar dependence %v", err)
 		}
 
 		err = os.RemoveAll(tarPath)
