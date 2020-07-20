@@ -3,6 +3,11 @@
 SQLBUNDLE_BUILD=sqlbundle
 INSTALL_DIR=/usr/local/bin
 
+prepare:
+	@export GOPROXY=direct
+	@export GOSUMDB=off
+	go get -v .
+
 #apply for develop
 dev:
 	env CGO_ENABLED=0 go build -tags='no_oracle' -ldflags="-s -w" -o ./bin/${SQLBUNDLE_BUILD} -a ./cmd
