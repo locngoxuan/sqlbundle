@@ -1,8 +1,7 @@
 language: go
 
 env:
-  - GIMME_OS=linux GIMME_ARCH=amd64
-  - GO111MODULE=on
+  - GIMME_OS=linux GIMME_ARCH=amd64 GO111MODULE=on
 
 install:
   - make prepare
