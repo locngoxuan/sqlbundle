@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
-	"scm.wcs.fortna.com/lngo/sqlbundle"
+	"github.com/locngoxuan/sqlbundle"
 )
 
 func main() {

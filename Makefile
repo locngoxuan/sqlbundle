@@ -7,6 +7,9 @@ INSTALL_DIR=/usr/local/bin
 dev:
 	env CGO_ENABLED=0 go build -tags='no_oracle' -ldflags="-s -w" -o ./bin/${SQLBUNDLE_BUILD} -a ./cmd
 
+dev-nodb:
+	env CGO_ENABLED=0 go build -tags='no_oracle no_postgres' -ldflags="-s -w" -o ./bin/${SQLBUNDLE_BUILD} -a ./cmd
+
 #apply on release
 release:
 	env CGO_ENABLED=1 go build -ldflags="-s -w" -o ./bin/${SQLBUNDLE_BUILD} -a ./cmd
