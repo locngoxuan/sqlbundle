@@ -1,6 +1,6 @@
-module scm.wcs.fortna.com/lngo/sqlbundle
+module github.com/locngoxuan/sqlbundle
 
-go 1.13
+go 1.14
 
 require (
 	github.com/godror/godror v0.16.1
