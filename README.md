@@ -79,5 +79,5 @@ Options:
 
 ### License
 
-Licensed under [GNU Affero General Public License Version 3] (./LICENSE)
+Licensed under [GNU Affero General Public License Version 3](./LICENSE) 
 
