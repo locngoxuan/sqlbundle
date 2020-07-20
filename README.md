@@ -1,8 +1,10 @@
-# SQLBundle
+### SQLBundle [![Build Status](https://travis-ci.com/locngoxuan/sqlbundle.svg?branch=master)](https://travis-ci.com/locngoxuan/sqlbundle)
 
 `SQLBundle` is a database migration tool. Manage your database schema by creating incremental SQL changes.
 
-# Install
+
+
+### Install
 
 Currently, `sqlbundle` just support `oracle` and `postgresql`, so for a fully version of the binary, use:
 
@@ -26,7 +28,7 @@ $ make release-nodb #for all OS
 
 
 
-# Usage
+### Usage
 
 ```shell
 Usage: sqlbundle COMMAND [OPTIONS]
@@ -73,7 +75,9 @@ Options:
     	working directory
 ```
 
-## License
 
-Licensed under [GNU Affero General Public License Version 3] [./LICENSE]
+
+### License
+
+Licensed under [GNU Affero General Public License Version 3] (./LICENSE)
 
