@@ -126,18 +126,28 @@ func (od OracleDialect) parseStatement(filePath string, up bool) (stmts []string
 			continue
 		}
 
-		if _, err = buf.WriteString(line + "\n"); err != nil {
-			break
-			//return nil, false, errors.Wrap(err, "failed to write to buf")
-		}
-
-		if strings.HasSuffix(line, ";") {
+		//if strings.HasSuffix(line, "/") {
+		if strings.TrimSpace(line) == "/" {
 			statement := buf.String()
 			statement = strings.TrimSuffix(statement, ";\n")
 			buf.Reset()
 			stmts = append(stmts, statement)
+			continue
+		}
+
+		if _, err = buf.WriteString(line + "\n"); err != nil {
+			break
+			//return nil, false, errors.Wrap(err, "failed to write to buf")
 		}
 	}
+
+	if buf.Len() > 0 {
+		statement := buf.String()
+		statement = strings.TrimSuffix(statement, ";\n")
+		buf.Reset()
+		stmts = append(stmts, statement)
+	}
+
 	if err = scanner.Err(); err != nil {
 		return nil, err
 	}

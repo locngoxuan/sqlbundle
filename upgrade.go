@@ -79,6 +79,7 @@ func (sb *SQLBundle) Upgrade() error {
 		}
 
 		for _, statement := range statements {
+			printDebug(statement)
 			if _, err = tx.Exec(statement); err != nil {
 				printInfo(fmt.Sprintf("Fail to execute query %s of file %s", statement, sql.FileName), err)
 				_ = tx.Rollback()
