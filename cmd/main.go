@@ -6,7 +6,10 @@ import (
 	"github.com/locngoxuan/sqlbundle"
 )
 
+var version = "1.2.0"
+
 func main() {
+	sqlbundle.SetVersion(version)
 	sqlbundle.SetLogWriter(os.Stdout)
 	cmd, err := sqlbundle.ReadArgument()
 	if err != nil {

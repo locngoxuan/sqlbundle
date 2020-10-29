@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-var version = "1.1.0"
+var version = "1.2.0"
 var sqlTemplate = `--+up BEGIN
 -- TODO: write sql statement here
 --+up END
@@ -28,6 +28,10 @@ type SQLBundle struct {
 	BuildDir   string
 	DepsDir    string
 	ConfigFile string
+}
+
+func SetVersion(v string){
+	version = v
 }
 
 var logWriter io.Writer = os.Stdout

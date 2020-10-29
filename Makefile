@@ -2,6 +2,7 @@
 
 SQLBUNDLE_BUILD=sqlbundle
 INSTALL_DIR=/usr/local/bin
+VERSION=1.2.0
 
 prepare:
 	@export GOPROXY=direct
@@ -10,32 +11,33 @@ prepare:
 
 #apply for develop
 dev:
-	env CGO_ENABLED=0 go build -tags='no_oracle' -ldflags="-s -w" -o ./bin/${SQLBUNDLE_BUILD} -a ./cmd
+	env CGO_ENABLED=0 go build -tags='no_oracle' -ldflags="-s -w -X main.version=${VERSION}" -o ./bin/${SQLBUNDLE_BUILD} -a ./cmd
 
 dev-nodb:
-	env CGO_ENABLED=0 go build -tags='no_oracle no_postgres' -ldflags="-s -w" -o ./bin/${SQLBUNDLE_BUILD} -a ./cmd
+	env CGO_ENABLED=0 go build -tags='no_oracle no_postgres' -ldflags="-s -w -X main.version=${VERSION}" -o ./bin/${SQLBUNDLE_BUILD} -a ./cmd
 
 #apply on release
 release:
-	env CGO_ENABLED=1 go build -ldflags="-s -w" -o ./bin/${SQLBUNDLE_BUILD} -a ./cmd
+	env CGO_ENABLED=1 go build -ldflags="-s -w -X main.version=${VERSION}" -o ./bin/${SQLBUNDLE_BUILD} -a ./cmd
 
 release-pgonly:
-	env CGO_ENABLED=0 go build -tags='no_oracle' -ldflags="-s -w" -o ./bin/${SQLBUNDLE_BUILD} -a ./cmd
-	env GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -tags='no_oracle' -ldflags="-s -w" -o ./bin/${SQLBUNDLE_BUILD}-linux -a ./cmd
-	env GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 go build -tags='no_oracle' -ldflags="-s -w" -o ./bin/${SQLBUNDLE_BUILD}-darwin -a ./cmd
-	env GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -tags='no_oracle' -o ./bin/${SQLBUNDLE_BUILD}-wins.exe -a ./cmd
+	env CGO_ENABLED=0 go build -tags='no_oracle' -ldflags="-s -w -X main.version=${VERSION}" -o ./bin/${SQLBUNDLE_BUILD} -a ./cmd
+	env GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -tags='no_oracle' -ldflags="-s -w -X main.version=${VERSION}" -o ./bin/${SQLBUNDLE_BUILD}-linux -a ./cmd
+	env GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 go build -tags='no_oracle' -ldflags="-s -w -X main.version=${VERSION}" -o ./bin/${SQLBUNDLE_BUILD}-darwin -a ./cmd
+	env GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -tags='no_oracle' -ldflags="-s -w -X main.version=${VERSION}" -o ./bin/${SQLBUNDLE_BUILD}-wins.exe -a ./cmd
 
 release-nodb:
-	env CGO_ENABLED=0 go build -tags='no_oracle no_postgres' -ldflags="-s -w" -o ./bin/${SQLBUNDLE_BUILD} -a ./cmd
-	env GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -tags='no_oracle no_postgres' -ldflags="-s -w" -o ./bin/${SQLBUNDLE_BUILD}-linux -a ./cmd
-	env GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 go build -tags='no_oracle no_postgres' -ldflags="-s -w" -o ./bin/${SQLBUNDLE_BUILD}-darwin -a ./cmd
-	env GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -tags='no_oracle no_postgres' -o ./bin/${SQLBUNDLE_BUILD}-wins.exe -a ./cmd
+	env CGO_ENABLED=0 go build -tags='no_oracle no_postgres' -ldflags="-s -w -X main.version=${VERSION}" -o ./bin/${SQLBUNDLE_BUILD} -a ./cmd
+	env GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -tags='no_oracle no_postgres' -ldflags="-s -w -X main.version=${VERSION}" -o ./bin/${SQLBUNDLE_BUILD}-linux -a ./cmd
+	env GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 go build -tags='no_oracle no_postgres' -ldflags="-s -w -X main.version=${VERSION}" -o ./bin/${SQLBUNDLE_BUILD}-darwin -a ./cmd
+	env GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -tags='no_oracle no_postgres' -ldflags="-s -w -X main.version=${VERSION}" -o ./bin/${SQLBUNDLE_BUILD}-wins.exe -a ./cmd
 
 #apply on release
 compress:
 	upx --brute ./bin/${SQLBUNDLE_BUILD}
 	upx --brute ./bin/${SQLBUNDLE_BUILD}-linux
 	upx --brute ./bin/${SQLBUNDLE_BUILD}-darwin
+	upx --brute ./bin/${SQLBUNDLE_BUILD}-wins.exe
 
 install:
 	chmod 755 ./bin/${SQLBUNDLE_BUILD}
