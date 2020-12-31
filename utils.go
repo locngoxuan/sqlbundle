@@ -184,6 +184,14 @@ func untarFile(tarPath, dest string) error {
 				}
 				continue
 			}
+
+			dir, _ := filepath.Split(absFileName)
+			if _, err := os.Stat(dir); os.IsNotExist(err) {
+				if err := os.MkdirAll(dir, 0755); err != nil {
+					return err
+				}
+			}
+
 			// create new file with original file mode
 			file, err := os.OpenFile(
 				absFileName,
