@@ -64,6 +64,10 @@ func (sb *SQLBundle) Downgrade() error {
 		return nil
 	}
 
+	//get driver dialect
+	d := GetDialect()
+
+	//reading histories for filtering
 	histories, err := QueryDatabaseHistories(db)
 	if err != nil {
 		return err
@@ -71,12 +75,37 @@ func (sb *SQLBundle) Downgrade() error {
 
 	kept := make([]DbHistory, 0)
 	applied := make(map[string]struct{})
+	sumMap := make(map[string]string)
 	for _, h := range histories {
 		applied[fmt.Sprintf("%s-%s", h.DepName, h.File)] = struct{}{}
 		_, ok := set[h.Version]
 		if !ok {
 			kept = append(kept, h)
 		}
+		sumMap[fmt.Sprintf("%s.%s", h.DepName, h.File)] = h.CheckSum
+	}
+
+	err = script.ForEach(func(sql MigrationScript) error {
+		if isEmpty(sql.FilePath) {
+			return nil
+		}
+		statements, err := d.parseStatement(sql.FilePath, true)
+		if err != nil {
+			return err
+		}
+
+		sum := checksum(statements)
+		v, ok := sumMap[fmt.Sprintf("%s.%s.%s", sql.Group, sql.Artifact, sql.FileName)]
+		if !ok {
+			return nil
+		}
+		if sum != v {
+			return fmt.Errorf("checksum of %s is not match", sql.FileName)
+		}
+		return nil
+	})
+	if err != nil {
+		return err
 	}
 
 	for _, h := range kept {
@@ -92,7 +121,7 @@ func (sb *SQLBundle) Downgrade() error {
 		sqlFiles[i], sqlFiles[j] = sqlFiles[j], sqlFiles[i]
 	}
 
-	d := GetDialect()
+	//prepare statement for doing batch undo
 	historyStatement, err := tx.Prepare(d.deleteHistory())
 	if err != nil {
 		printInfo("Fail to prepare delete statement of specific version of database", err)
@@ -121,7 +150,7 @@ func (sb *SQLBundle) Downgrade() error {
 				return err
 			}
 		}
-		printInfo(fmt.Sprintf("Redo%s%s", strings.Repeat(" ", 10), sql.FileName))
+		printInfo(fmt.Sprintf("Redo %s%s", strings.Repeat(" ", 10), sql.FileName))
 		_, err = historyStatement.Exec(fmt.Sprintf("%s.%s", sql.Group, sql.Artifact), sql.Version, sql.FileName)
 		if err != nil {
 			printInfo("Fail to redo history of database", err)

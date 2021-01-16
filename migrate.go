@@ -67,7 +67,7 @@ func QueryDatabaseHistories(db *sql.DB) ([]DbHistory, error) {
 
 	for rows.Next() {
 		var row DbHistory
-		if err = rows.Scan(&row.Id, &row.Version, &row.DepName, &row.DepVersion, &row.File); err != nil {
+		if err = rows.Scan(&row.Id, &row.Version, &row.DepName, &row.DepVersion, &row.File, &row.CheckSum); err != nil {
 			return nil, err
 		}
 		histories = append(histories, row)

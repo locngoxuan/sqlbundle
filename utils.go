@@ -34,6 +34,11 @@ func isNillOrEmpty(s *string) bool {
 	return isEmpty(*s)
 }
 
+func checksum(statement []string) string {
+	data := strings.Join(statement, "|")
+	return fmt.Sprintf("%x", md5.Sum([]byte(data)))
+}
+
 func downloadDependency(depDir, link string) (string, error) {
 	printInfo("download dependency", link)
 	// Create the file

@@ -30,6 +30,18 @@ type MigrationSQL struct {
 	FileName   string
 }
 
+func (ms *MigrationScript) ForEach(f func(m MigrationScript) error) error {
+	s := ms
+	for s != nil {
+		err := f(*s)
+		if err != nil {
+			return err
+		}
+		s = s.NextScript
+	}
+	return nil
+}
+
 func (ms *MigrationScript) ListAll() {
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)
@@ -40,6 +52,27 @@ func (ms *MigrationScript) ListAll() {
 		s = s.NextScript
 	}
 	t.Render()
+}
+
+func (ms *MigrationScript) isIgnored() []MigrationSQL {
+	s := ms
+	paths := make([]MigrationSQL, 0)
+	for s != nil {
+		if !s.Ignore || isEmpty(s.FilePath) {
+			s = s.NextScript
+			continue
+		}
+		paths = append(paths, MigrationSQL{
+			AppVersion: s.AppVersion,
+			Group:      s.Group,
+			Artifact:   s.Artifact,
+			Version:    s.Version,
+			FilePath:   s.FilePath,
+			FileName:   s.FileName,
+		})
+		s = s.NextScript
+	}
+	return paths
 }
 
 func (ms *MigrationScript) notIgnored() []MigrationSQL {

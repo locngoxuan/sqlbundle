@@ -18,6 +18,7 @@ type DbHistory struct {
 	DepName    string
 	DepVersion string
 	File       string
+	CheckSum   string
 	Timestamp  time.Time
 }
 
@@ -54,6 +55,7 @@ func (pg PostgresDialect) createTable() []string {
 				dep_name text,
 				dep_version varchar(255),
 				file_name text NOT NULL,
+				checksum text NOT NULL,
                 timestamp timestamp NULL default now(),
                 PRIMARY KEY(id)
             );`,
@@ -70,7 +72,7 @@ func (pg PostgresDialect) dbVersionQuery(db *sql.DB) (*sql.Rows, error) {
 }
 
 func (pg PostgresDialect) dbHistoryQuery(db *sql.DB) (*sql.Rows, error) {
-	rows, err := db.Query(fmt.Sprintf(`SELECT id, version, dep_name, dep_version, file_name from db_histories ORDER BY id DESC`))
+	rows, err := db.Query(fmt.Sprintf(`SELECT id, version, dep_name, dep_version, file_name, checksum from db_histories ORDER BY id DESC`))
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +84,7 @@ func (pg PostgresDialect) insertVersion() string {
 }
 
 func (pg PostgresDialect) insertHistory() string {
-	return fmt.Sprintf("INSERT INTO db_histories (version, dep_name, dep_version, file_name) VALUES ($1, $2, $3, $4)")
+	return fmt.Sprintf("INSERT INTO db_histories (version, dep_name, dep_version, file_name, checksum) VALUES ($1, $2, $3, $4, $5)")
 }
 
 func (pg PostgresDialect) deleteVersion() string {
@@ -115,6 +117,7 @@ func (od OracleDialect) createTable() []string {
 			dep_name varchar(1024),
 			dep_version varchar(255),
 			file_name varchar(1024) NOT NULL,
+			checksum varchar(1024) NOT NULL,
 			timestamp timestamp default CURRENT_TIMESTAMP,
 			PRIMARY KEY(id)
 		)`,
@@ -130,7 +133,7 @@ func (od OracleDialect) dbVersionQuery(db *sql.DB) (*sql.Rows, error) {
 }
 
 func (od OracleDialect) dbHistoryQuery(db *sql.DB) (*sql.Rows, error) {
-	rows, err := db.Query(fmt.Sprintf(`SELECT id, version, dep_name, dep_version, file_name from db_histories ORDER BY id DESC`))
+	rows, err := db.Query(fmt.Sprintf(`SELECT id, version, dep_name, dep_version, file_name, checksum from db_histories ORDER BY id DESC`))
 	if err != nil {
 		return nil, err
 	}
@@ -142,7 +145,7 @@ func (od OracleDialect) insertVersion() string {
 }
 
 func (od OracleDialect) insertHistory() string {
-	return fmt.Sprintf("INSERT INTO db_histories (version, dep_name, dep_version, file_name) VALUES (:1, :2, :3, :4)")
+	return fmt.Sprintf("INSERT INTO db_histories (version, dep_name, dep_version, file_name, checksum) VALUES (:1, :2, :3, :4, :5)")
 }
 
 func (od OracleDialect) deleteVersion() string {

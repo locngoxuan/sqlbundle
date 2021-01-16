@@ -67,7 +67,7 @@ func (pg PostgresDialect) parseStatement(filePath string, up bool) (stmts []stri
 		}
 
 		line = strings.TrimSpace(line)
-		if strings.TrimSpace(line) == "" {
+		if line == "" {
 			//ignore empty line
 			continue
 		}
@@ -121,15 +121,14 @@ func (od OracleDialect) parseStatement(filePath string, up bool) (stmts []string
 		}
 
 		line = strings.TrimSpace(line)
-		if strings.TrimSpace(line) == "" {
+		if line == "" {
 			//ignore empty line
 			continue
 		}
 
-		//if strings.HasSuffix(line, "/") {
-		if strings.TrimSpace(line) == "/" {
+		if line == "/" {
 			statement := buf.String()
-			statement = strings.TrimSuffix(statement, ";\n")
+			//statement = strings.TrimSuffix(statement, ";\n")
 			buf.Reset()
 			stmts = append(stmts, statement)
 			continue
@@ -137,13 +136,12 @@ func (od OracleDialect) parseStatement(filePath string, up bool) (stmts []string
 
 		if _, err = buf.WriteString(line + "\n"); err != nil {
 			break
-			//return nil, false, errors.Wrap(err, "failed to write to buf")
 		}
 	}
 
 	if buf.Len() > 0 {
 		statement := buf.String()
-		statement = strings.TrimSuffix(statement, ";\n")
+		//statement = strings.TrimSuffix(statement, ";\n")
 		buf.Reset()
 		stmts = append(stmts, statement)
 	}

@@ -45,13 +45,44 @@ func (sb *SQLBundle) Upgrade() error {
 		}
 	}
 
+	//get driver dialect
+	d := GetDialect()
+
+	//reading histories for filtering
 	histories, err := QueryDatabaseHistories(db)
 	if err != nil {
 		return err
 	}
 
+	sumMap := make(map[string]string)
 	for _, h := range histories {
 		script.ignore(h.DepName, h.File)
+		sumMap[fmt.Sprintf("%s.%s", h.DepName, h.File)] = h.CheckSum
+	}
+
+	if len(sumMap) > 0 {
+		err = script.ForEach(func(sql MigrationScript) error {
+			if isEmpty(sql.FilePath) {
+				return nil
+			}
+			statements, err := d.parseStatement(sql.FilePath, true)
+			if err != nil {
+				return err
+			}
+
+			sum := checksum(statements)
+			v, ok := sumMap[fmt.Sprintf("%s.%s.%s", sql.Group, sql.Artifact, sql.FileName)]
+			if !ok {
+				return nil
+			}
+			if sum != v {
+				return fmt.Errorf("checksum of %s is not match", sql.FileName)
+			}
+			return nil
+		})
+		if err != nil {
+			return err
+		}
 	}
 
 	tx, err := db.Begin()
@@ -60,7 +91,7 @@ func (sb *SQLBundle) Upgrade() error {
 	}
 	sqlFiles := script.notIgnored()
 
-	d := GetDialect()
+	//prepare statement for batch upgrade
 	historyStatement, err := tx.Prepare(d.insertHistory())
 	if err != nil {
 		printInfo("Fail to prepare insert statement of new version of database", err)
@@ -86,9 +117,9 @@ func (sb *SQLBundle) Upgrade() error {
 				return err
 			}
 		}
-		printInfo(fmt.Sprintf("Apply%s%s", strings.Repeat(" ", 10), sql.FileName))
-		_, err = historyStatement.Exec(sb.ReadVersion(), fmt.Sprintf("%s.%s", sql.Group, sql.Artifact), sql.Version, sql.FileName)
-
+		printInfo(fmt.Sprintf("Apply %s%s", strings.Repeat(" ", 10), sql.FileName))
+		sumValue := checksum(statements)
+		_, err = historyStatement.Exec(sb.ReadVersion(), fmt.Sprintf("%s.%s", sql.Group, sql.Artifact), sql.Version, sql.FileName, sumValue)
 		if err != nil {
 			printInfo("Fail to insert history of database", err)
 			_ = tx.Rollback()
