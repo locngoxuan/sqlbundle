@@ -30,13 +30,13 @@ type SQLBundle struct {
 	ConfigFile string
 }
 
-func SetVersion(v string){
+func SetVersion(v string) {
 	version = v
 }
 
 var logWriter io.Writer = os.Stdout
 
-func SetLogWriter(writer io.Writer){
+func SetLogWriter(writer io.Writer) {
 	logWriter = writer
 }
 
@@ -326,7 +326,10 @@ func (sb *SQLBundle) Pack() error {
 		return err
 	}
 
-	if exists(sb.DepsDir) {
+	if sb.Config.Dependencies != nil && len(sb.Config.Dependencies) > 0 {
+		if !exists(sb.DepsDir) {
+			return fmt.Errorf("dependencies are not installed")
+		}
 		err = os.MkdirAll(filepath.Join(packDirPath, "deps"), 0755)
 		if err != nil {
 			return err

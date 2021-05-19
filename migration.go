@@ -153,7 +153,10 @@ func collectMigrations(sb SQLBundle, script *MigrationScript) (err error) {
 		err = errors.New("can not read config")
 		return
 	}
-	if sb.Config.Dependencies != nil && len(sb.Config.Dependencies) > 0 && exists(sb.DepsDir) {
+	if sb.Config.Dependencies != nil && len(sb.Config.Dependencies) > 0 {
+		if !exists(sb.DepsDir) {
+			return errors.New("dependencies are not installed")
+		}
 		for _, depLink := range sb.Config.Dependencies {
 			depName := path.Base(depLink)
 			depName = strings.TrimSuffix(depName, filepath.Ext(depName))

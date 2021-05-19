@@ -2,7 +2,7 @@
 
 SQLBUNDLE_BUILD=sqlbundle
 INSTALL_DIR=/usr/local/bin
-VERSION=1.3.0
+VERSION=1.3.1
 
 prepare:
 	@export GOPROXY=direct
