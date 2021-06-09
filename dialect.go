@@ -46,7 +46,7 @@ func (pg PostgresDialect) createTable() []string {
 		`CREATE TABLE db_versions (
             	id serial NOT NULL,
                 version varchar(255) NOT NULL,
-                timestamp timestamp NULL default now(),
+                timestamp timestamp NOT NULL default now(),
                 PRIMARY KEY(id)
             );`,
 		`CREATE TABLE db_histories (
@@ -56,7 +56,7 @@ func (pg PostgresDialect) createTable() []string {
 				dep_version varchar(255),
 				file_name text NOT NULL,
 				checksum text NOT NULL,
-                timestamp timestamp NULL default now(),
+                timestamp timestamp NOT NULL default now(),
                 PRIMARY KEY(id)
             );`,
 	}
@@ -93,6 +93,64 @@ func (pg PostgresDialect) deleteVersion() string {
 
 func (pg PostgresDialect) deleteHistory() string {
 	return fmt.Sprintf("DELETE FROM db_histories WHERE dep_name = $1 AND dep_version = $2 AND file_name = $3")
+}
+
+////////////////////////////
+// SQLITE
+////////////////////////////
+
+type SQLiteDialect struct{}
+
+func (pg SQLiteDialect) createTable() []string {
+	return []string{
+		`CREATE TABLE db_versions (
+            	id INTEGER PRIMARY KEY AUTOINCREMENT,
+                version text NOT NULL,
+                timestamp datetime default CURRENT_TIMESTAMP
+            );`,
+		`CREATE TABLE db_histories (
+            	id INTEGER PRIMARY KEY AUTOINCREMENT,
+                version text,
+				dep_name text,
+				dep_version text,
+				file_name text,
+				checksum text,
+                timestamp timestamp default CURRENT_TIMESTAMP
+            );`,
+	}
+
+}
+
+func (pg SQLiteDialect) dbVersionQuery(db *sql.DB) (*sql.Rows, error) {
+	rows, err := db.Query(fmt.Sprintf(`SELECT id, version from db_versions ORDER BY id DESC`))
+	if err != nil {
+		return nil, err
+	}
+	return rows, err
+}
+
+func (pg SQLiteDialect) dbHistoryQuery(db *sql.DB) (*sql.Rows, error) {
+	rows, err := db.Query(fmt.Sprintf(`SELECT id, version, dep_name, dep_version, file_name, checksum from db_histories ORDER BY id DESC`))
+	if err != nil {
+		return nil, err
+	}
+	return rows, err
+}
+
+func (pg SQLiteDialect) insertVersion() string {
+	return fmt.Sprintf("INSERT INTO db_versions (version) VALUES (?)")
+}
+
+func (pg SQLiteDialect) insertHistory() string {
+	return fmt.Sprintf("INSERT INTO db_histories (version, dep_name, dep_version, file_name, checksum) VALUES (?, ?, ?, ?, ?)")
+}
+
+func (pg SQLiteDialect) deleteVersion() string {
+	return fmt.Sprintf("DELETE FROM db_versions WHERE version = ?")
+}
+
+func (pg SQLiteDialect) deleteHistory() string {
+	return fmt.Sprintf("DELETE FROM db_histories WHERE dep_name = ? AND dep_version = ? AND file_name = ?")
 }
 
 ////////////////////////////
@@ -165,6 +223,9 @@ func SetDialect(d string) error {
 	switch d {
 	case "postgres":
 		dialect = &PostgresDialect{}
+		break
+	case "sqlite":
+		dialect = &SQLiteDialect{}
 		break
 	case "oracle":
 		dialect = &OracleDialect{}
