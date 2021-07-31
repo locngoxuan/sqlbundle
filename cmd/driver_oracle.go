@@ -3,5 +3,5 @@
 package main
 
 import (
-	_ "github.com/godror/godror"
+	_ "github.com/sijms/go-ora/v2"
 )
