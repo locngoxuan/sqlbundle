@@ -17,7 +17,7 @@ func OpenDBWithDriver(driver string, dbstring string) (*sql.DB, error) {
 	}
 
 	if driver == "sqlite" {
-		driver = "sqlite3"
+		driver = "sqlite"
 	}
 
 	if driver == "postgresql" || driver == "pql" {
@@ -25,7 +25,7 @@ func OpenDBWithDriver(driver string, dbstring string) (*sql.DB, error) {
 	}
 
 	switch driver {
-	case "postgres", "oracle", "sqlite3":
+	case "postgres", "oracle", "sqlite":
 		return sql.Open(driver, dbstring)
 	default:
 		return nil, fmt.Errorf("unsupported driver %s", driver)

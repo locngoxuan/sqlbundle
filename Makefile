@@ -2,7 +2,7 @@
 
 SQLBUNDLE_BUILD=sqlbundle
 INSTALL_DIR=/usr/local/bin
-VERSION=1.5.0
+VERSION=1.6.0
 
 prepare:
 	@export GOPROXY=direct
@@ -25,8 +25,9 @@ install:
 	chmod 755 ./bin/${SQLBUNDLE_BUILD}
 	cp -r ./bin/${SQLBUNDLE_BUILD} ${INSTALL_DIR}/${SQLBUNDLE_BUILD}
 
-docker: release
+docker: release compress
 	docker build --force-rm -t xuanloc0511/sqlbundle:${VERSION} -f Dockerfile .
+	docker tag xuanloc0511/sqlbundle:${VERSION}  xuanloc0511/sqlbundle:latest 
 
 clean:
 	rm -rf ./bin
