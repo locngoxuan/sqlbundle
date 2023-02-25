@@ -9,6 +9,6 @@ require (
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/sijms/go-ora/v2 v2.1.22
 	github.com/stretchr/testify v1.3.0 // indirect
-	golang.org/x/sys v0.0.0-20210320140829-1e4c9ba3b0c4 // indirect
+	golang.org/x/sys v0.1.0 // indirect
 	modernc.org/sqlite v1.12.0
 )
